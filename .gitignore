@@ -1,0 +1,64 @@
+# .gitignore for Bot Monitoring Server
+
+# Environment variables file - NEVER COMMIT THIS!
+.env
+
+# Python bytecode and cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files - you might want to keep these, but usually they are ignored
+*.log
+logs/
+
+# Database files (if any)
+*.db
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+
+# Specific to this project
+bot_monitor.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# PyInstaller
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# macOS
+*.DS_Store?
