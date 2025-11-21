@@ -95,7 +95,45 @@ json { "buy_bot": "Running", "sell_bot": "Not Running" } Possible status values:
 
 "Error: ..." - An error occurred during verification.
 
-"Unknown" - The status has not yet been determined (initial
+"Unknown" - The status has not yet been determined (initial state)
+
+📊 Logging All events are logged to the bot_monitor.log file with the time, message level, and details.
+
+Example log:
+
+text 2023-10-05 12:34:56,789 - INFO - Successful connection to the server. 2023-10-05 12:34:57,123 - INFO - Starting checking bot status... 2023-10-05 12:34:57,456 - INFO - buy_bot is working properly. 2023-10-05 12:34:57,789 - WARNING - sell_bot is not working. Restarting... 2023-10-05 12:34:58,123 - INFO - sell_bot has been successfully restarted. 🔧 Troubleshooting "Error: Authentication failed" in the logs:
+
+Check USERNAME_1 and PASSWORD in the .env file.
+
+Make sure password-based SSH connections are allowed on the remote server.
+
+Bot status is constantly "File Not Found":
+
+Check that the BUY_BOT_PING_FILE and SELL_BOT_PING_FILE paths are correct.
+
+Make sure the bot has write access to the specified directory and is actually creating/updating the file.
+
+Bot status is "Not Running" even though it's running:
+
+Increase the PING_TIMEOUT value if the bot updates the ping file less frequently than every PING_TIMEOUT seconds.
+
+Check whether the bot is freezing or skipping ping file updates.
+
+Flask server won't start:
+
+Check whether the MONITOR_SERVER_PORT port is being used by another process.
+
+🛡️ Security: Never commit the .env file in Git! It contains passwords and sensitive data.
+
+For production environments, consider using SSH keys instead of passwords.
+
+Restrict access to the Flask server (MONITOR_SERVER_HOST=127.0.0.1) or configure a firewall.
+
+🚀 Advanced Configuration (Production) Run as a systemd service: Create a service for the monitoring server itself so it automatically starts on system boot and restarts on failure.
+
+Docker: Wrap your application in a Docker container for easy deployment and management.
+
+Notifications: Integrate notifications to Telegram/Slack when the bot restarts.
 
 
 # Bot Monitoring Server
