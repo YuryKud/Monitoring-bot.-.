@@ -1,3 +1,103 @@
+Bot Monitoring Server
+A server for monitoring and automatically restarting trading bots running on remote servers.
+
+🚨 Purpose
+This service solves a critical problem: it constantly checks whether your trading bots (Buy Bot and Sell Bot) are operational and automatically restarts them if they stop responding. This prevents downtime in trading activity, which could lead to financial losses.
+
+🛠️ How it works
+The system consists of two main components:
+
+Flask REST API Server: Provides an HTTP endpoint for checking the current status of bots.
+SSH Monitor: A background task that periodically checks whether bots are alive and manages their services.
+Detailed monitoring mechanism ("Ping files")
+This is the core of the entire system. A simple yet reliable mechanism based on "ping files" is used for monitoring:
+
+Each trading bot (Buy Bot, Sell Bot) must periodically (e.g., every 30 seconds) update a special file on its server's disk. This update consists of writing the current Unix timestamp (time.time()) to the file.
+The monitoring server connects to the remote server via SSH, reads the contents of these ping files, and compares the recorded time with the current time.
+Decision logic:
+Running: If the difference between the current time and the time in the file is less than PING_TIMEOUT (e.g., 120 seconds), the bot is considered running.
+Not Running: If the difference is greater than PING_TIMEOUT, the bot is considered "frozen" or stopped. This bot's service is automatically restarted (systemctl restart ...).
+File Not Found: If the ping file does not exist or is empty, the system will attempt to start the bot service (systemctl start ...), assuming it has been stopped. Architecture
++-------------------+ SSH (File Reading) +-----------------------+
+| Monitoring Server | ----------------------------------> | Remote Server |
+| (Flask API) | | - Buy Bot Service |
+| - Status Endpoint | <--------------------------------- | - Sell Bot Service |
++-------------------+ (Ping files: timestamp) | - buy_bot.ping |
+| - sell_bot.ping |
++-----------------------+
+### Project Structure
+
+bot-monitoring-server/ ├── monitoring_server.py # Main application script ├── .env.example # Example file with environment variables ├── requirements.txt # Python dependencies ├── bot_monitor.log # Log file (automatically generated) └── README.md
+
+Setup and Installation
+1. Dependencies
+Make sure Python 3.8+ is installed. Install the required libraries: pip install -r requirements.txt
+
+2. Setting up environment variables
+Create a .env file in the project root directory based on the .env.example example:
+
+Flask monitoring server configuration
+MONITOR_SERVER_HOST=127.0.0.1 MONITOR_SERVER_PORT=5000
+
+Connection parameters to the remote bot server
+REMOTE_HOST=your-remote-server.com USERNAME_1=your-ssh-username PASSWORD=your-ssh-password
+
+Names of your bot systemd services
+BUY_BOT_SERVICE=buy_bot SELL_BOT_SERVICE=sell_bot
+
+Absolute paths to ping files on the remote server
+BUY_BOT_PING_FILE=/path/to/your/buy_bot.ping SELL_BOT_PING_FILE=/path/to/your/sell_bot.ping
+
+Timeouts and intervals (in seconds)
+PING_TIMEOUT=120 # A bot is considered "down" if it hasn't been pinged for longer than this amount of time. CHECK_INTERVAL=1800 # How often the monitor checks the bots' status (1800 seconds = 30 minutes).
+
+Configuring Trading Bots Important! For monitoring to work, your bots must be implemented as systemd services and must constantly update their ping files.
+Example code for a bot (Python):
+
+python import time import os
+
+PING_FILE = "/path/to/your/buy_bot.ping"
+
+while True: # Your main trading logic here # ...
+
+# Periodically update the ping file
+with open(PING_FILE, 'w') as f:
+f.write(str(time.time()))
+
+time.sleep(30) # Update every 30 seconds
+Example systemd service (/etc/systemd/system/buy_bot.service):
+
+ini [Unit] Description=Buy Bot Service After=network.target
+
+[Service] Type=simple User=ubuntu WorkingDirectory=/path/to/your/bot ExecStart=/usr/bin/python3 /path/to/your/bot/buy_bot.py Restart=on-failure RestartSec=10
+
+[Install] WantedBy=multi-user.target 🚀 Startup Start the monitoring server:
+
+bash python monitoring_server.py The server will start in two modes:
+
+Background monitoring task: Checks bots every CHECK_INTERVAL seconds.
+
+HTTP Server: Available at http://MONITOR_SERVER_HOST:MONITOR_SERVER_PORT.
+
+📡 API Endpoints GET / Returns a welcome message.
+
+GET /status Returns the current bot status in JSON format.
+
+Example response:
+
+json { "buy_bot": "Running", "sell_bot": "Not Running" } Possible status values:
+
+"Running" - The bot is working properly.
+
+"Not Running" - The bot is not responding, a restart has occurred.
+
+"File Not Found" - The ping file was not found, the service has started.
+
+"Error: ..." - An error occurred during verification.
+
+"Unknown" - The status has not yet been determined (initial
+
+
 # Bot Monitoring Server
 
 Сервер для мониторинга и автоматического перезапуска торговых ботов, работающих на удаленных серверах.
@@ -195,3 +295,4 @@ Flask-сервер не запускается:
 Docker: Оберните приложение в Docker-контейнер для простоты развертывания и управления.
 
 Уведомления: Интегрируйте отправку уведомлений в Telegram/Slack при перезапуске бота.
+
